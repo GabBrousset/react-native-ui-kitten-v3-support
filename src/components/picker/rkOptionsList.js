@@ -1,172 +1,228 @@
 import React from 'react';
-import {
-  View,
-  ListView,
-  InteractionManager,
-} from 'react-native';
+import { View, FlatList, InteractionManager, Text } from 'react-native';
 import { RkOption } from './rkOption';
 import { RkComponent } from '../rkComponent';
 
 export class RkOptionsList extends RkComponent {
-  componentName = 'RkOptionsList';
+    componentName = 'RkOptionsList';
 
-  constructor(props) {
-    super(props);
-    const ds = new ListView.DataSource({ rowHasChanged: () => true });
-    this.optionHeight = this.props.optionHeight || 30;
-    this.optionNumberOnPicker = this.props.optionNumberOnPicker || 3;
-    this.pickerHeight = this.optionNumberOnPicker * this.optionHeight;
-    this.optionsData = this.updateOptionsData(this.props.data, this.optionNumberOnPicker);
-    this.state = {
-      dataSource: ds.cloneWithRows(this.optionsData),
-      selectedOption: this.props.selectedOption,
-      ds,
-    };
-  }
-
-  componentDidMount() {
-    const selectedIndex = this.findIndexByValue(this.state.selectedOption, this.props.data);
-    this.scrollToIndex(selectedIndex);
-  }
-
-  componentDidUpdate(prevProps) {
-    if (this.props.scrollToSelected !== prevProps.scrollToSelected && this.props.scrollToSelected) {
-      this.setInitialOptions();
+    constructor(props) {
+        super(props);
+        // const ds = new ListView.DataSource({ rowHasChanged: () => true });
+        this.optionHeight = this.props.optionHeight || 30;
+        this.optionNumberOnPicker = this.props.optionNumberOnPicker || 3;
+        this.pickerHeight = this.optionNumberOnPicker * this.optionHeight;
+        this.optionsData = this.updateOptionsData(
+            this.props.data,
+            this.optionNumberOnPicker
+        );
+        this.state = {
+            dataSource: this.optionsData,
+            selectedOption: this.props.selectedOption,
+            // ds,
+        };
     }
-  }
 
-  onScrollBeginDrag() {
-    this.dragStart = true;
-    if (this.timer) {
-      clearTimeout(this.timer);
+    componentDidMount() {
+        const selectedIndex = this.findIndexByValue(
+            this.state.selectedOption,
+            this.props.data
+        );
+        console.log('initial', selectedIndex)
+        setTimeout(() => {
+          this.scrollToIndex(selectedIndex)
+        }, 10);
     }
-  }
 
-  onMomentumScrollBegin() {
-    this.momentumStart = true;
-    if (this.timer) {
-      clearTimeout(this.timer);
+    componentDidUpdate(prevProps) {
+        if (
+            this.props.scrollToSelected !== prevProps.scrollToSelected &&
+            this.props.scrollToSelected
+        ) {
+            this.setInitialOptions();
+        }
     }
-  }
 
-  onScrollEndDrag(event, id) {
-    const el = {
-      nativeEvent: {
-        contentOffset: {
-          y: event.nativeEvent.contentOffset.y,
-        },
-      },
-    };
-    this.dragStart = false;
-    if (this.timer) {
-      clearTimeout(this.timer);
+    onScrollBeginDrag() {
+        this.dragStart = true;
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
     }
-    this.timer = setTimeout(() => {
-      if (!this.dragStart && !this.momentumStart) {
-        this.selectOption(el, id);
-      }
-    }, 10);
-  }
 
-  onMomentumScrollEnd(event, id) {
-    const selectionEvent = {
-      nativeEvent: {
-        contentOffset: {
-          y: event.nativeEvent.contentOffset.y,
-        },
-      },
-    };
-    this.momentumStart = false;
-    if (this.timer) {
-      clearTimeout(this.timer);
+    onMomentumScrollBegin() {
+        this.momentumStart = true;
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
     }
-    if (!this.dragStart) {
-      this.selectOption(selectionEvent, id);
+
+    onScrollEndDrag(event, id) {
+        const el = {
+            nativeEvent: {
+                contentOffset: {
+                    y: event.nativeEvent.contentOffset.y,
+                },
+            },
+        };
+        this.dragStart = false;
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+        this.timer = setTimeout(() => {
+            if (!this.dragStart && !this.momentumStart) {
+                this.selectOption(el, id);
+            }
+        }, 10);
     }
-  }
 
-  setInitialOptions() {
-    const selectedIndex = this.findIndexByValue(this.state.selectedOption, this.props.data);
-    this.setState({ selectedOption: this.props.data[selectedIndex] });
-    InteractionManager.runAfterInteractions(() => this.scrollToIndex(selectedIndex));
-    this.props.onSelect(this.state.selectedOption, this.props.id);
-  }
+    onMomentumScrollEnd(event, id) {
+        const selectionEvent = {
+            nativeEvent: {
+                contentOffset: {
+                    y: event.nativeEvent.contentOffset.y,
+                },
+            },
+        };
+        this.momentumStart = false;
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+        if (!this.dragStart) {
+            this.selectOption(selectionEvent, id);
+        }
+    }
 
-  findIndexByValue(expectableValue, array) {
-    let expectableIndex = Math.round(array.length / 2);
+    setInitialOptions() {
+        const selectedIndex = this.findIndexByValue(
+            this.state.selectedOption,
+            this.props.data
+        );
+        this.setState({ selectedOption: this.props.data[selectedIndex] });
+        InteractionManager.runAfterInteractions(() =>
+            this.scrollToIndex(selectedIndex)
+        );
+        this.props.onSelect(this.state.selectedOption, this.props.id);
+    }
 
-    array.forEach((value, index) => {
-      if (this.compareOptions(value, expectableValue)) expectableIndex = index;
-    });
-    return expectableIndex;
-  }
+    findIndexByValue(expectableValue, array) {
+        let expectableIndex = Math.round(array.length / 2);
 
-  compareOptions(option1, option2) {
-    return (option1.key && option2.key && option1.key === option2.key)
-      || (!option1.key && !option2.key && option1 === option2);
-  }
+        array.forEach((value, index) => {
+            if (this.compareOptions(value, expectableValue))
+                expectableIndex = index;
+        });
+        return expectableIndex;
+    }
 
-  scrollToIndex(index) {
-    this.listRef.scrollTo({ x: 0, y: index * this.optionHeight, animated: true });
-  }
+    compareOptions(option1, option2) {
+        return (
+            (option1.key && option2.key && option1.key === option2.key) ||
+            (!option1.key && !option2.key && option1 === option2)
+        );
+    }
 
-  updateOptionsData(optionsData, optionNumberOnPicker) {
-    return this.createEmptyArray(optionNumberOnPicker / 2)
-      .concat(optionsData.concat(this.createEmptyArray(optionNumberOnPicker / 2)));
-  }
+    scrollToIndex(index) {
+      console.log('index', index)
+        this.listRef.scrollToOffset({
+            offset: index * this.optionHeight,
+            animated: true,
+        });
+    }
 
-  createEmptyArray(arrayLength) {
-    return Array(...new Array(Math.floor(arrayLength))).map(() => ' ');
-  }
+    updateOptionsData(optionsData, optionNumberOnPicker) {
+        return this.createEmptyArray(optionNumberOnPicker / 2).concat(
+            optionsData.concat(this.createEmptyArray(optionNumberOnPicker / 2))
+        );
+    }
 
-  selectOption(event, id) {
-    const y = event.nativeEvent.contentOffset ? event.nativeEvent.contentOffset.y : 0;
-    const selectedIndex = Math.round(y / this.optionHeight);
-    this.setState({
-      selectedOption: this.props.data[selectedIndex],
-      dataSource: this.state.ds.cloneWithRows(this.optionsData),
-    });
-    this.scrollToIndex(selectedIndex);
-    this.props.onSelect(this.props.data[selectedIndex], id);
-  }
+    createEmptyArray(arrayLength) {
+        return Array(...new Array(Math.floor(arrayLength))).map(() => ' ');
+    }
 
-  renderOption(option, optionBlock) {
-    return (
-      <RkOption
-        data={option}
-        selectedOption={this.state.selectedOption}
-        style={optionBlock}
-        optionHeight={this.optionHeight}
-        optionRkType={this.props.optionRkType}
-        selectedOptionRkType={this.props.selectedOptionRkType}
-      />
-    );
-  }
+    selectOption(event, id) {
+        const y = event.nativeEvent.contentOffset
+            ? event.nativeEvent.contentOffset.y
+            : 0;
+        const selectedIndex = Math.round(y / this.optionHeight);
+        this.setState({
+            selectedOption: this.props.data[selectedIndex],
+            // dataSource: this.state.ds.cloneWithRows(this.optionsData),
+        });
+        this.scrollToIndex(selectedIndex);
+        this.props.onSelect(this.props.data[selectedIndex], this.props.id);
+    }
 
-  render() {
-    const highlightVarStyle = {
-      top: (this.optionNumberOnPicker - 1) * 0.5 * this.optionHeight,
-      height: this.optionHeight,
-    };
-    return (
-      <View style={this.props.optionListContainerStyle}>
-        <View style={[highlightVarStyle, this.props.highlightBlockStyle]} />
-        <ListView
-          bounces={false}
-          showsVerticalScrollIndicator={false}
-          ref={(ref) => {
-            this.listRef = ref;
-          }}
-          onMomentumScrollBegin={() => this.onMomentumScrollBegin()}
-          onMomentumScrollEnd={(e) => this.onMomentumScrollEnd(e, this.props.id)}
-          onScrollBeginDrag={(e) => this.onScrollBeginDrag(e)}
-          onScrollEndDrag={(e) => this.onScrollEndDrag(e, this.props.id)}
-          dataSource={this.state.dataSource}
-          renderRow={(item) => this.renderOption(item, this.props.optionBlockStyle)}
-          enableEmptySections={true}
-          initialListSize={this.optionsData.length}
-        />
-      </View>
-    );
-  }
+    renderOption(option, index, optionBlock) {
+        return (
+            <RkOption
+                data={option}
+                selectedOption={this.state.selectedOption}
+                style={optionBlock}
+                optionHeight={this.optionHeight}
+                optionRkType={this.props.optionRkType}
+                selectedOptionRkType={this.props.selectedOptionRkType}
+                onSelect={() => this.props.onSelect(this.props.data[index], option)}
+            />
+        );
+    }
+
+    render() {
+        const highlightVarStyle = {
+            top: (this.optionNumberOnPicker - 1) * 0.5 * this.optionHeight,
+            height: this.optionHeight,
+        };
+
+        console.log('ready')
+        return (
+            // <View style={this.props.optionListContainerStyle}>
+            //     <View
+            //         style={[highlightVarStyle, this.props.highlightBlockStyle]}
+            //     />
+            //     {/* <ListView
+            //         bounces={false}
+            //         showsVerticalScrollIndicator={false}
+            //         ref={(ref) => {
+            //             this.listRef = ref;
+            //         }}
+            //         onMomentumScrollBegin={() => this.onMomentumScrollBegin()}
+            //         onMomentumScrollEnd={(e) =>
+            //             this.onMomentumScrollEnd(e, this.props.id)
+            //         }
+            //         onScrollBeginDrag={(e) => this.onScrollBeginDrag(e)}
+            //         onScrollEndDrag={(e) =>
+            //             this.onScrollEndDrag(e, this.props.id)
+            //         }
+            //         dataSource={this.state.dataSource}
+            //         renderRow={(item) =>
+            //             this.renderOption(item, this.props.optionBlockStyle)
+            //         }
+            //         enableEmptySections={true}
+            //         initialListSize={this.optionsData.length}
+            //     /> */}
+            // </View>
+            <View style={this.props.optionListContainerStyle}>
+              <View
+                style={[highlightVarStyle, this.props.highlightBlockStyle]}
+              />
+              <FlatList
+                ref={(ref) => {
+                  this.listRef = ref;
+                }}
+                data={this.state.dataSource}
+                renderItem={({item, index}) => this.renderOption(item, index, this.props.optionBlockStyle)}
+                keyExtractor={(item, index) => index}
+                initialNumToRender={this.optionsData.length}
+                onMomentumScrollBegin={() => this.onMomentumScrollBegin()}
+                onMomentumScrollEnd={(e) =>
+                    this.onMomentumScrollEnd(e, this.props.id)
+                }
+                onScrollBeginDrag={(e) => this.onScrollBeginDrag(e)}
+                onScrollEndDrag={(e) =>
+                    this.onScrollEndDrag(e, this.props.id)
+                }
+              />
+            </View>
+        );
+    }
 }

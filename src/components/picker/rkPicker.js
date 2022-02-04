@@ -237,6 +237,7 @@ export class RkPicker extends RkComponent {
   }
 
   onOptionSelect(item, index) {
+    console.log(index)
     this.state.scrollToSelected = this.props.visible;
     this.state.selectedOptions[index] = item;
   }

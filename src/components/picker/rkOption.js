@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import { RkText } from '../text/rkText';
 import { RkComponent } from '../rkComponent';
 
